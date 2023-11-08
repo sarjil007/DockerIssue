@@ -9,9 +9,8 @@ RUN adduser -D app
 
 COPY ./files/main.py ./
 COPY ./files/app.py ./
-COPY --chown=app files/private_key_cloudfront.pem /code/files/
-COPY --chown=app files/private.pem /code/files/
-COPY --chown=app files/public.pem /code/files/
+COPY --chown=app files/1.txt /code/files/
+
 
 # The following command is added to disable cache so that the next RUN command execute everytime
 #ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
