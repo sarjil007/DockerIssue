@@ -1,0 +1,42 @@
+FROM python:3.11-alpine as builder
+
+#RUN --mount=type=cache,target=/var/cache/apk,sharing=shared \
+RUN apk add build-base=0.5-r3 libffi-dev=3.4.4-r2
+
+
+WORKDIR /code
+RUN adduser -D app
+
+COPY ./files/main.py ./
+COPY ./files/app.py ./
+COPY --chown=app files/private_key_cloudfront.pem /code/files/
+COPY --chown=app files/private.pem /code/files/
+COPY --chown=app files/public.pem /code/files/
+
+# The following command is added to disable cache so that the next RUN command execute everytime
+#ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
+
+
+FROM python:3.11-alpine as runner
+RUN apk add --no-cache curl
+
+RUN adduser -D app
+
+COPY --from=builder --chown=app /code /code
+COPY --from=builder --chown=app /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+
+
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 CMD curl -f http://localhost:80/healthcheck || exit 1
+
+RUN chown -R app /code/files/
+RUN pip install fastapi uvicorn
+
+
+USER app
+
+WORKDIR /code
+
+
+EXPOSE 7777
+
+ENTRYPOINT ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7777"]
